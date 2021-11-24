@@ -1,20 +1,8 @@
 const http = require('http');
 const express = require('express');
-const socketio = require('socket.io');
+const io = require('socket.io')();
 
 const RpsGame = require('./rps-game')
-
-const app = express(); //App is an object and a function, it is our listener
-
-const clientPath = `${__dirname}/../client` ;
-console.log('Serving static from', clientPath)
-
-//We want to serve static files to the user
-app.use(express.static(clientPath));
-
-const server=http.createServer(app);
-
-const io = socketio(server);
 
 let waitingPlayer = null;
 
