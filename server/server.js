@@ -22,7 +22,7 @@ io.on(`connection`, (sock) => {
     })
 });
 
-server.on('error', (err) => {
+io.on('error', (err) => {
     console.error('Server error:', err);
 });  //when there is an error, call this callback funciton
 
