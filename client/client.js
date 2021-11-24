@@ -22,7 +22,7 @@ const onFormSubmitted = (e) => {  //function accepts event
     sock.emit('message',text)
 };
 
-const sock = io();
+const sock = io("https://agile-brook-44005.herokuapp.com/");
 /*
 sock.on('message', (text) =>{
     writeEvent(text);
