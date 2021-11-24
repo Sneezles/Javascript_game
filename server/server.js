@@ -1,4 +1,3 @@
-const http = require('http');
 const io = require('socket.io')();
 
 const RpsGame = require('./rps-game')
