@@ -39,6 +39,4 @@ server.on('error', (err) => {
     console.error('Server error:', err);
 });  //when there is an error, call this callback funciton
 
-server.listen(process.env.PORT ||  8080, () => { //when it listens to 8080, the function is called
-    
-});
+io.listen(process.env.PORT ||  8080)
