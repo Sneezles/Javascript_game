@@ -1,102 +1,44 @@
-const io = require('socket.io')();
-const { initGame, gameLoop, getUpdatedVelocity } = require('./game');
-const { FRAME_RATE } = require('./constants');
-const { makeid } = require('./utils');
+const http = require('http');
+const express = require('express');
+const socketio = require('socket.io');
 
-const state = {};
-const clientRooms = {};
+const RpsGame = require('./rps-game')
 
-io.on('connection', client => {
+const app = express(); //App is an object and a function, it is our listener
 
-  client.on('keydown', handleKeydown);
-  client.on('newGame', handleNewGame);
-  client.on('joinGame', handleJoinGame);
+const clientPath = `${__dirname}/../client` ;
+console.log('Serving static from', clientPath)
 
-  function handleJoinGame(roomName) {
-    const room = io.sockets.adapter.rooms[roomName];
+//We want to serve static files to the user
+app.use(express.static(clientPath));
 
-    let allUsers;
-    if (room) {
-      allUsers = room.sockets;
+const server=http.createServer(app);
+
+const io = socketio(server);
+
+let waitingPlayer = null;
+
+io.on(`connection`, (sock) => {
+    console.log('Someone connected');
+
+    if (waitingPlayer) {
+        new RpsGame(waitingPlayer, sock);
+        waitingPlayer = null;
+    }
+    else{
+        waitingPlayer = sock;
+        waitingPlayer.emit('message', 'Waiting for an opponent')
     }
 
-    let numClients = 0;
-    if (allUsers) {
-      numClients = Object.keys(allUsers).length;
-    }
-
-    if (numClients === 0) {
-      client.emit('unknownCode');
-      return;
-    } else if (numClients > 1) {
-      client.emit('tooManyPlayers');
-      return;
-    }
-
-    clientRooms[client.id] = roomName;
-
-    client.join(roomName);
-    client.number = 2;
-    client.emit('init', 2);
-    
-    startGameInterval(roomName);
-  }
-
-  function handleNewGame() {
-    let roomName = makeid(5);
-    clientRooms[client.id] = roomName;
-    client.emit('gameCode', roomName);
-
-    state[roomName] = initGame();
-
-    client.join(roomName);
-    client.number = 1;
-    client.emit('init', 1);
-  }
-
-  function handleKeydown(keyCode) {
-    const roomName = clientRooms[client.id];
-    if (!roomName) {
-      return;
-    }
-    try {
-      keyCode = parseInt(keyCode);
-    } catch(e) {
-      console.error(e);
-      return;
-    }
-
-    const vel = getUpdatedVelocity(keyCode);
-
-    if (vel) {
-      state[roomName].players[client.number - 1].vel = vel;
-    }
-  }
+    sock.on('message', (text) => {
+        io.emit('message', text);  //io.emit sends it to everyone who is connected, including the client itself. Sock.emit only to client
+    })
 });
 
-function startGameInterval(roomName) {
-  const intervalId = setInterval(() => {
-    const winner = gameLoop(state[roomName]);
-    
-    if (!winner) {
-      emitGameState(roomName, state[roomName])
-    } else {
-      emitGameOver(roomName, winner);
-      state[roomName] = null;
-      clearInterval(intervalId);
-    }
-  }, 1000 / FRAME_RATE);
-}
+server.on('error', (err) => {
+    console.error('Server error:', err);
+});  //when there is an error, call this callback funciton
 
-function emitGameState(room, gameState) {
-  // Send this event to everyone in the room.
-  io.sockets.in(room)
-    .emit('gameState', JSON.stringify(gameState));
-}
-
-function emitGameOver(room, winner) {
-  io.sockets.in(room)
-    .emit('gameOver', JSON.stringify({ winner }));
-}
-
-io.listen(process.env.PORT || 3000);
+server.listen(8080, () => { //when it listens to 8080, the function is called
+    console.log('RPS started on 8080')
+});
