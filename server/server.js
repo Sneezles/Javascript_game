@@ -1,20 +1,6 @@
-const http = require('http');
-const express = require('express');
-const socketio = require('socket.io');
+const io = require('socket.io')();
 
 const RpsGame = require('./rps-game')
-
-const app = express(); //App is an object and a function, it is our listener
-
-const clientPath = `${__dirname}/../client` ;
-console.log('Serving static from', clientPath)
-
-//We want to serve static files to the user
-app.use(express.static(clientPath));
-
-const server=http.createServer(app);
-
-const io = socketio(server);
 
 let waitingPlayer = null;
 
@@ -35,10 +21,10 @@ io.on(`connection`, (sock) => {
     })
 });
 
-server.on('error', (err) => {
+io.on('error', (err) => {
     console.error('Server error:', err);
 });  //when there is an error, call this callback funciton
 
-server.listen(process.env.PORT || 3000, () => { //when it listens to 8080, the function is called
+io.listen(process.env.PORT || 3000, () => { //when it listens to 8080, the function is called
     console.log('Server Started')
 });
