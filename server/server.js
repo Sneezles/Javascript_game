@@ -1,24 +1,40 @@
-const io = require('socket.io')();
+const http = require('http');
+const express = require('express');
+const socketio = require('socket.io');
+const createBoard = require('./create-board');
+const createCooldown = require('./create-cooldown');
 
-const RpsGame = require('./rps-game')
+const app = express();
 
-let waitingPlayer = null;
+app.use(express.static(`${__dirname}/../client`));
 
-io.on(`connection`, (sock) => {
+const server = http.createServer(app);
+const io = socketio(server);
+const { clear, getBoard, makeTurn } = createBoard(20);
 
-    if (waitingPlayer) {
-        new RpsGame(waitingPlayer, sock);
-        waitingPlayer = null;
+io.on('connection', (sock) => {
+  const color = "#FF0000"
+  const cooldown = createCooldown(2000);
+  sock.emit('board', getBoard());
+
+  sock.on('message', (text) => io.emit('message', text));
+  sock.on('turn', ({ x, y }) => {
+    if (cooldown()) {
+      const playerWon = makeTurn(x, y, color);
+      io.emit('turn', { x, y, color });
+
+      if (playerWon) {
+        sock.emit('message', 'You Won!');
+        io.emit('message', 'New Round');
+        clear();
+        io.emit('board');
+      }
     }
-    else{
-        waitingPlayer = sock;
-        waitingPlayer.emit('message', 'Waiting for an opponent')
-    }
-
-    sock.on('message', (text) => {
-        io.emit('message', text);  //io.emit sends it to everyone who is connected, including the client itself. Sock.emit only to client
-    })
+  });
 });
 
+server.on('error', (err) => {
+  console.error(err);
+});
 
-io.listen(process.env.PORT || 3000);
+server.listen(process.env.PORT || 8080);
