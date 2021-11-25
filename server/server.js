@@ -5,7 +5,6 @@ const RpsGame = require('./rps-game')
 let waitingPlayer = null;
 
 io.on(`connection`, (sock) => {
-    console.log('Someone connected');
 
     if (waitingPlayer) {
         new RpsGame(waitingPlayer, sock);
@@ -21,10 +20,5 @@ io.on(`connection`, (sock) => {
     })
 });
 
-io.on('error', (err) => {
-    console.error('Server error:', err);
-});  //when there is an error, call this callback funciton
 
-io.listen(process.env.PORT || 3000, () => { //when it listens to 8080, the function is called
-    console.log('Server Started')
-});
+io.listen(process.env.PORT || 3000);
