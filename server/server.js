@@ -39,6 +39,6 @@ server.on('error', (err) => {
     console.error('Server error:', err);
 });  //when there is an error, call this callback funciton
 
-server.listen(8080, () => { //when it listens to 8080, the function is called
-    console.log('RPS started on 8080')
+server.listen(process.env.PORT || 3000, () => { //when it listens to 8080, the function is called
+    console.log('Server Started')
 });
